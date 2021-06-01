@@ -5,8 +5,13 @@
 #SBATCH --time=00:10:00
 module load ffmpeg
 
-ffmpeg -framerate 60 -i output/berlioz_symphonie_2_un_bal_vals/images/frame%09d.png -i data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 -pix_fmt yuv410p -threads ${SLURM_CPUS_PER_TASK} output/berlioz_symphonie_2_un_bal_vals.mp4 -y
+song_file="data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3"
+frame_dir="output/berlioz_symphonie_2_un_bal_vals/images"
+out_file="output/berlioz_symphonie_2_un_bal_vals.mp4"
 
-
-
-
+ffmpeg \
+-framerate 60 -i ${frame_dir}/frame%09d.png \
+-i ${song_file} \
+-pix_fmt yuv410p \
+-threads ${SLURM_CPUS_PER_TASK} \
+${out_file}

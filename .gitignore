@@ -1,2 +1,11 @@
 data/*
 slurm*.out
+output
+profile_data
+*.txt
+*.log
+images/*.svg
+images/*.nb
+.Rhistory
+*.Rproj
+.DS_Store
