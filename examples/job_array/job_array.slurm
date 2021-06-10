@@ -4,7 +4,7 @@
 #SBATCH --time=00:10:00
 #SBATCH --array=0-9
 #SBATCH --account=renney_710
-module load python ffmpeg
+module load python ffmpeg libsndfile
 
 # How many seconds to process per job
 duration=4
