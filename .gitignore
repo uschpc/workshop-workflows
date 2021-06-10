@@ -9,3 +9,4 @@ images/*.nb
 .Rhistory
 *.Rproj
 .DS_Store
+.Rproj.user

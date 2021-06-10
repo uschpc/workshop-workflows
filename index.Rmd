@@ -1,11 +1,12 @@
 ---
 title: "Methods for Automating Job Submission "
 author: "Cesar Sul <br> csul[at]usc.edu <br> Research Computing Associate <br> CARC at USC"
-date: "2021-04-23"
+date: "2021-06-10"
 output:
   ioslides_presentation:
     widescreen: true
     smaller: true
+    highlight: pygments
 ---
 
 ```{r setup, include = FALSE}
@@ -15,26 +16,38 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Outline
 
-- Outline
-- Goes
-- Here
-- Coming
-- Soon!
+- Example workflow description
+- Job Arrays (low overhead)
+- SnakeMake  (readability prioritized)
+- Pegasus    (portability prioritized)
+- Makeflow   (simplicity prioritized)
+- Questions
+- Lab/Project time
 
 ## Getting setup
-- Slides are available at https://uschpc.github.io/workshop-hpc-python/   
-- `git clone https://github.com/uschpc/workshop-hpc-python.git`
+- Slides are available at https://github.com/uschpc/workshop-workflows
+- `git clone https://github.com/uschpc/workshop-workflows.git`
 - Open `index.html` in browser
 - examples in `examples`
-- Requirements:
 
 ## Why are we here?!
+<div class="columns-2" >
+
+
+[Alnitak and the Flame Nebula](https://astroaro.fr/en/en_neb-de-la-flamme/)
+```{r,echo=FALSE,out.width="75%"}
+knitr::include_graphics("images/Flame_ARO_960.jpg")
+```
 
 - Researchers often spend time submitting jobs, checking on jobs
 - When jobs complete, they decided if they want to submit more jobs
 - This is time consumuing, tedious, can be error prone
 - Anything repetitive can be *automated*
 
+
+
+
+</div>
 ## What is 'Workflow Management Software'?
 
 - Workflows are sets of tasks that depend on each other
@@ -61,6 +74,25 @@ knitr::include_graphics("images/daft-punk-break-up-video-screenshot.jpg")
 ```
 </div>
 
+## Example workflow: Input data
+
+<div class="columns-2">
+- For this tutorial, we'll use music with permissive licensing :)
+- [Symphonie fantastiqe - Hector Berlioz](https://en.wikipedia.org/wiki/Symphonie_fantastique)
+- Downloadable here https://www.liberliber.it/online/autori/autori-b/hector-berlioz/symphonie-fantastique-op-14-concertgebouw-orchestra-of-amsterdam/
+- Cleaned up filenames available here:
+  - https://app.globus.org/file-manager?origin_id=56569ec1-af41-4745-a8d1-8514231c7a6d&origin_path=%2Fproject%2Fhpcroot%2Fcsul%2F (download to your project with Globus)
+  - https://m-7cdc74.a78b8.36fe.data.globus.org/project/hpcroot/csul/symphonie_fantastique.tar (download locally)
+- Once you have `symphonie_fantastique.tar`, you can extract with `tar xfv symphonie_fantastique.tar`
+    - Ideally put it in `data` directory
+
+```{r,echo=FALSE,out.width="50%"}
+knitr::include_graphics("images/890px-Berlioz_Petit_BNF_Gallica-crop.jpg")
+```
+
+</div>
+
+
 ## Example workflow: Music Visualizer
 
 <div class="columns-2">
@@ -81,6 +113,16 @@ knitr::include_graphics("images/workflow.png")
     - creates `output.mp4`
     - Can not run until **all** images are created
 </div>
+
+## Example workflow: Music Visualizer
+
+- When complete, output files should be available under `output`
+```{r,echo=FALSE,out.width="50%"}
+knitr::include_graphics("images/song.gif")
+```
+- We should find
+    - `output/<song_name>/<song_name>.mp4`
+    - `output/<song_name>/images/*.png`
 
 ## Job type:`rosa_fft.py`
 
@@ -109,11 +151,11 @@ knitr::include_graphics("images/workflow.png")
 
 ## Job Arrays
 
-- Built-in Slurm feature
+- Built-in Slurm feature https://slurm.schedmd.com/job_array.html
 - Use same job script for multiple jobs
 
 rosa_fft_array.slurm:
-```
+```{r,engine='bash',eval=FALSE}
 #!/bin/bash
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu-1GB
@@ -124,7 +166,7 @@ module load python ffmpeg
 # How many seconds to process per job
 duration=4
 time_index=$((SLURM_ARRAY_TASK_ID*duration))
-song_file="data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mpr"
+song_file="data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3"
 out_dir="output/berlioz_symphonie_2_un_bal_vals"
 
 echo "Processing time_index:${time_index}"
@@ -135,11 +177,27 @@ python3 ./scripts/rosa_fft.py -f ${song_file} \
 - `$SLURM_ARRAY_TASK_ID` will be any number from 0-9
 
 ## Job Arrays
+- Job script can be found in `examples/job_array`
+- The important part is
+```{r,engine='bash',eval=FALSE}
+python3 ./scripts/rosa_fft.py -f ${song_file} \
+-i ${time_index} -t ${duration} -o ${out_dir}
+```
+
+|Variable| meaning| value|
+|---|---|---|
+|`${song_file}`| Song file to process| `data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3`|
+|`$SLURM_ARRAY_TASK_ID`| Which array element are we?| 0-9|
+|`${duration}`|How many seconds to process?|4|
+|`${time_index}`| Time to start processing| `$((SLURM_ARRAY_TASK_ID*duration))`| |
+|`${out_dir}`| Where to save output data|`output/berlioz_symphonie_2_un_bal_vals`|
+## Job Arrays
 
 - Merge results with second job script
+- `examples/job_array/ffmpeg.slurm`
 
 ffmpeg.slurm:
-```
+```{r,engine='bash',eval=FALSE}
 #!/bin/bash
 #!/bin/bash
 #SBATCH --ntasks=1
@@ -160,14 +218,18 @@ ffmpeg \
 ${out_file}
 ```
 
-- This job cannot run until every element of `rosa_fft_array.slurm` completes.
-- Instead of waiting, we can set a **job dependency**
 
 ## Job dependencies
+- This job cannot run until every element of `rosa_fft_array.slurm` completes.
+- Instead of waiting, we can set a **job dependency**
 - We set jobs to wait until others complete before running
+- Using `bash` we can capture the job id
+    - When submitting job, Slurm returns `Submitted batch job XXXXX`
+    - We can use `cut` to parse text
 
-manager.sh:
-```
+`examples/job_array/manager.sh`:
+
+```{r,engine='bash',eval=FALSE}
 #!/bin/bash
 
 # save 4th word using ' ' as delmiter
@@ -177,7 +239,6 @@ jid=$(sbatch examples/job_array/job_array.slurm | cut -d ' ' -f 4)
 sbatch --dependency=afterok:${jid} examples/job_array/ffmpeg.slurm
 ```
 
-- Using `bash` we can capture the job id
 
 ## Job array remarks
 
@@ -205,13 +266,13 @@ sbatch --dependency=afterok:${jid} examples/job_array/ffmpeg.slurm
 - Task order is tracked by input/output files
 
 ## SnakeMake
-- A future version of this presentation will have more info on SnakeMake
+- A future version of this presentation will have more info on [SnakeMake](https://snakemake.readthedocs.io/en/stable/tutorial/short.html)
 - Python based
 - Includes features for tracking software dependencies
-- Prioritizes reproducibility
+- Prioritizes readability
 - Syntax is kind of obtuse
 
-```
+```{r,engine='bash',eval=FALSE}
 rule bwa:
     input:
         "data/genome.fa",
@@ -224,12 +285,27 @@ rule bwa:
     shell:
         "bwa mem -t {threads} {input} | samtools view -Sb - > {output}"
 ```
+##  Parts of pegasus workflow
+- workflow generator
+- catalogs
+    - transformation.yml
+        - Where are executables?
+    - sites.yml
+        - Details on execution site
+    - replicas.yml
+        - Where are files saved?
+- workflow.yml
+    - List of every job
+    - input files
+    - output files
+    - executable
+    - arguments
+    - dependent jobs
+
 ## Makeflow
 
 - We will use [Makeflow](http://ccl.cse.nd.edu/software/makeflow/) as an example
-- [SnakeMake](https://snakemake.readthedocs.io/en/stable/tutorial/short.html) also a good alternative
 - The choice is kind of arbitrary
-    - A future version of this presentation may use SnakeMake
     - In general choose something that you are comfortable with
     - Something that has large userbase incase you need support
 
@@ -237,26 +313,72 @@ rule bwa:
 
 - Makeflow can be used similar to `MakeFile` used in building software
 - Format is:
-```
+```{r,engine='bash',eval=FALSE}
 outputfile(s): inputfile(s)
 # Leading whitespace below must be tab character, not spaces!
         command to generate outputfile(s)
 ```
+## Makeflow file
+- From the Makeflow Tutorial
 
-- Here's an snippet:
+```{r,engine='bash',eval=FALSE}
+CURL=/usr/bin/curl
+CONVERT=/usr/bin/convert
+URL="http://ccl.cse.nd.edu/images/capitol.jpg"
+
+capitol.anim.gif: capitol.jpg capitol.90.jpg capitol.180.jpg capitol.270.jpg capitol.360.jpg
+    LOCAL $(CONVERT) -delay 10 -loop 0 capitol.jpg capitol.90.jpg capitol.180.jpg capitol.270.jpg capitol.360.jpg capitol.270.jpg capitol.180.jpg capitol.90.jpg capitol.anim.gif
+
+capitol.90.jpg: capitol.jpg
+    $(CONVERT) -swirl 90 capitol.jpg capitol.90.jpg
+
+capitol.180.jpg: capitol.jpg
+    $(CONVERT) -swirl 180 capitol.jpg capitol.180.jpg
+
+capitol.270.jpg: capitol.jpg
+    $(CONVERT) -swirl 270 capitol.jpg capitol.270.jpg
+
+capitol.360.jpg: capitol.jpg
+    $(CONVERT) -swirl 360 capitol.jpg capitol.360.jpg
+
+capitol.jpg:
+    LOCAL $(CURL) -o capitol.jpg $(URL)
 ```
+
+## Makeflow file
+- Here's a snippet of our Makeflow file:
+```{r,engine='bash',eval=FALSE}
 
 ./berlioz_symphonie_1_reveries_pa/berlioz_symphonie_1_reveries_pa.mp4: ./berlioz_symphonie_1_reveries_pa/images/frame000000000.png ./berlioz_symphonie_1_reveries_pa/images/frame000000001.png ./berlioz_symphonie_1_reveries_pa/images/frame000000002.png ./berlioz_symphonie_1_reveries_pa/images/frame000000003.png ./berlioz_symphonie_1_reveries_pa/images/frame000000004.png ./berlioz_symphonie_1_reveries_pa/images/frame000000005.png ./berlioz_symphonie_1_reveries_pa/images/frame000000006.png ./berlioz_symphonie_1_reveries_pa/images/frame000000007.png ./berlioz_symphonie_1_reveries_pa/images/frame000000008.png ./berlioz_symphonie_1_reveries_pa/images/frame000000009.png ./berlioz_symphonie_1_reveries_pa/images/frame000000010.png ./berlioz_symphonie_1_reveries_pa/images/frame000000011.png ./berlioz_symphonie_1_reveries_pa/images/frame000000012.png ./berlioz_symphonie_1_reveries_pa/images/frame000000013.png ./berlioz_symphonie_1_reveries_pa/images/frame000000014.png ./berlioz_symphonie_1_reveries_pa/images/frame000000015.png
     fmpeg -threads 4 -framerate 60 -i Homework/04Da_Funk/images/frame%09d.png -i data/Homework/04Da_Funk.flac -pix_fmt yuv420p  Homework/04Da_Funk/04Da_Funk.mp4
 
 ./berlioz_symphonie_1_reveries_pa/images/frame000000000.png ./berlioz_symphonie_1_reveries_pa/images/frame000000001.png ./berlioz_symphonie_1_reveries_pa/images/frame000000002.png ./berlioz_symphonie_1_reveries_pa/images/frame000000003.png ./berlioz_symphonie_1_reveries_pa/images/frame000000004.png ./berlioz_symphonie_1_reveries_pa/images/frame000000005.png ./berlioz_symphonie_1_reveries_pa/images/frame000000006.png ./berlioz_symphonie_1_reveries_pa/images/frame000000007.png ./berlioz_symphonie_1_reveries_pa/images/frame000000008.png ./berlioz_symphonie_1_reveries_pa/images/frame000000009.png ./berlioz_symphonie_1_reveries_pa/images/frame000000010.png ./berlioz_symphonie_1_reveries_pa/images/frame000000011.png ./berlioz_symphonie_1_reveries_pa/images/frame000000012.png ./berlioz_symphonie_1_reveries_pa/images/frame000000013.png
-    python3 -r -f /project/hpcroot/csul/workshop-workflows/data/symphonie_fantastique/berlioz_symphonie_1_reveries_pa.mp3  -i 1 -o ./berlioz_symphonie_1_reveries_pa
+    python3 /scripts/rosa_fft.py -f /project/hpcroot/csul/workshop-workflows/data/symphonie_fantastique/berlioz_symphonie_1_reveries_pa.mp3  -i 1 -o ./berlioz_symphonie_1_reveries_pa
 ```
 
 - A few remarks
     - For more than a few files, Makeflow file is hard to read
     - Can be tedious to write by hand
 
+## Makeflow JX
+- Makeflow also supports **J**SON e**X**tended syntax
+- Much more readable but personally I couldn't get it to work
+
+```{
+"rules":[
+         {
+            "outputs":["input.txt"],
+            "command":"echo \"Hello Makeflow!\" > input.txt",
+            "local_job":true,
+         },
+         {
+            "outputs":[format("output.%d",i)],
+            "inputs":["simulation.py","input.txt"],
+            "command":format("./simulation.py %d < input.txt > output.%d", i, i),
+         } for i in range(1,5)
+        ],
+}
+```
 ## Running a Makeflow
 - Assume we have a Makeflow file that converts a song
 - How do we use it?
@@ -273,7 +395,7 @@ example 1
 
 ## Running a Makeflow
 - Run the makeflow
-```
+```{r,engine='bash',eval=FALSE}
 
 makeflow berlioz_symphonie_1_reveries_pa.makeflow                                        
 parsing berlioz_symphonie_1_reveries_pa.makeflow...                                                                     
@@ -301,19 +423,10 @@ job 32185 completed
 nothing left to do.
 ```
 
-## Running a Makeflow
-
-- Output files should be available under `examples/makeflow/berlioz_symphonie_1_reveries_pa/`
-```{r,echo=FALSE,out.width="50%"}
-knitr::include_graphics("images/song.gif")
-```
-- We should find
-    - `<song_name>.mp4`
-    - `images/*.png`
 
 ## Running a Makeflow
 
-- Output files should be available under `examples/makeflow/berlioz_symphonie_1_reveries_pa/`
+- Output files should be available under `examples/makeflow/`
 ```{r,echo=FALSE,out.width="50%"}
 knitr::include_graphics("images/song_still.gif")
 ```
@@ -347,7 +460,22 @@ deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000068.png
 deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000056.png
 deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000072.png
 ```
-## Running a large Makeflow
+
+## Questions?
+
+## Labs/Projects
+- Create a set of job arrays that will process first 10s of each song
+- Makeflow
+    - Write a python script that will generate a makeflow to process an entire song
+    - Given a makeflow file with many tasks, try to run on multiple nodes
+
+## Project 1 Job array
+- Create a set of job arrays that will process first 10s of each song
+
+## Project 2 Generate a Makeflow
+- Write a python script that will generate a makeflow to process an entire song
+
+## Project 3 Run a large Makeflow
 - What if we have many tasks we want to run?
     -   Considering most songs are at least a few minutes long (100s of 'jobs')
 - We can spread the work out over multiple compute nodes
@@ -357,7 +485,8 @@ deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000072.png
 - Worker process
     - Looks for Daemon and requests work
 
-## Running a large Makeflow
+## Projec 3 Running a large Makeflow
+
 - To launch daemon `makeflow -T wq examples/makeflow_workers/makeflows/01Daftendirekt.makeflow -p $PORT`
 
 ```
@@ -387,7 +516,6 @@ submitting job: python3 ./scripts/rosa_fft.py -f data/chirpy/Blitz_it.wav -i 20 
 
 ## Running a large Makeflow
 - To launch workers `srun work_queue_worker $HOSTNAME:$PORT examples/makeflow_workers/makeflows/01Daftendirekt.makeflow`
-- Also make sure to have
 
 ```
 work_queue_worker: creating workspace /scratch/csul/makeflow/example/worker-268648-412
@@ -403,8 +531,3 @@ connected to manager d06-15.hpc.usc.edu:8080 via local address 10.125.19.236:576
 work_queue_worker: using 24 cores, 193123 MB memory, 185757284 MB disk, 0 gpus
 connected to manager d06-15.hpc.usc.edu:8080 via local address 10.125.19.234:59316
 ```
-
-## Pegasus workflows
-
-- WIP
-- Pegasus version of this workflow
