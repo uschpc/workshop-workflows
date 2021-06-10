@@ -3,6 +3,7 @@
 #SBATCH --mem-per-cpu-1GB
 #SBATCH --time=00:10:00
 #SBATCH --array=0-9
+#SBATCH --account=renney_710
 module load python ffmpeg
 
 # How many seconds to process per job
