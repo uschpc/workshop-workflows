@@ -346,7 +346,7 @@ capitol.jpg:
 ```
 
 ## Makeflow file
-- Here's a snippet of our Makeflow file:
+- Here's a snippet of a Makeflow file:
 ```{r,engine='bash',eval=FALSE}
 
 ./berlioz_symphonie_1_reveries_pa/berlioz_symphonie_1_reveries_pa.mp4: ./berlioz_symphonie_1_reveries_pa/images/frame000000000.png ./berlioz_symphonie_1_reveries_pa/images/frame000000001.png ./berlioz_symphonie_1_reveries_pa/images/frame000000002.png ./berlioz_symphonie_1_reveries_pa/images/frame000000003.png ./berlioz_symphonie_1_reveries_pa/images/frame000000004.png ./berlioz_symphonie_1_reveries_pa/images/frame000000005.png ./berlioz_symphonie_1_reveries_pa/images/frame000000006.png ./berlioz_symphonie_1_reveries_pa/images/frame000000007.png ./berlioz_symphonie_1_reveries_pa/images/frame000000008.png ./berlioz_symphonie_1_reveries_pa/images/frame000000009.png ./berlioz_symphonie_1_reveries_pa/images/frame000000010.png ./berlioz_symphonie_1_reveries_pa/images/frame000000011.png ./berlioz_symphonie_1_reveries_pa/images/frame000000012.png ./berlioz_symphonie_1_reveries_pa/images/frame000000013.png ./berlioz_symphonie_1_reveries_pa/images/frame000000014.png ./berlioz_symphonie_1_reveries_pa/images/frame000000015.png
@@ -359,6 +359,24 @@ capitol.jpg:
 - A few remarks
     - For more than a few files, Makeflow file is hard to read
     - Can be tedious to write by hand
+
+## Makeflow file
+- Due to a "quirk" in Makeflow we must add intermediate step
+
+```{r,engine='bash',eval=FALSE}
+output/song_name/index_XXXX_complete: list of .png files
+    touch output/song_name/index_XXXX_complete
+```
+- Makeflow breaks if rules are too long
+- This step says that if all images for time index XXXX exist, that rule is complete
+
+- The ffmpeg step then uses the rule
+
+```{r,engine='bash',eval=FALSE}
+output/song_name/song_name.mp4 : (list of output/song_name/index_XXXX_complete files)
+    ffmpeg ....
+```
+- If all `index_XXXX_complete` files exist, most likely all frames exist
 
 ## Makeflow JX
 - Makeflow also supports **J**SON e**X**tended syntax
@@ -471,9 +489,33 @@ deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000072.png
 
 ## Project 1 Job array
 - Create a set of job arrays that will process first 10s of each song
+- Comes with `projects/project1/job_array.slurm_template`
+```{r,engine='bash',eval=FALSE}
+#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu-1GB
+#SBATCH --time=00:10:00
+#SBATCH --array=0-9
+module load python ffmpeg libsndfile
+
+# How many seconds to process per job
+duration=4
+time_index=$((SLURM_ARRAY_TASK_ID*duration))
+song_file="XXX.mp3"
+out_dir="output/XXX"
+
+echo "Processing time_index:${time_index}"
+
+python3 ./scripts/rosa_fft.py -f ${song_file} -i ${time_index} -t ${duration} -o ${out_dir}
+```
+- Hint: `sed 's/XXX/cool_song/g' job_array.slurm_template` will find every `XXX` and replace with `cool_song`
+- Use files in `examples/job_array` as needed
 
 ## Project 2 Generate a Makeflow
 - Write a python script that will generate a makeflow to process an entire song
+- You can find a script to get started in `projects/project2/generate_makefile.py`
+- My solution (no peeking!) is there
+    - I've been using it to generate makeflow files for this presentation
 
 ## Project 3 Run a large Makeflow
 - What if we have many tasks we want to run?
@@ -486,9 +528,10 @@ deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000072.png
     - Looks for Daemon and requests work
 
 ## Projec 3 Running a large Makeflow
-
-- To launch daemon `makeflow -T wq examples/makeflow_workers/makeflows/01Daftendirekt.makeflow -p $PORT`
-
+- The first song in our collection is ~12 minutes long (over 1440 jobs)
+- To launch daemon `makeflow -T wq projects/project3/berlioz_symphonie_1_reveries_pa.makeflow -p $PORT`
+- `export PORT=8888`
+- This sets up a job manager that "listens" for workers on port `$PORT`
 ```
 parsing makeflows/Blitz_it.makeflow...
 local resources: 20 cores, 64334 MB memory, 5566556492 MB disk
@@ -515,8 +558,12 @@ submitting job: python3 ./scripts/rosa_fft.py -f data/chirpy/Blitz_it.wav -i 20 
 ```
 
 ## Running a large Makeflow
-- To launch workers `srun work_queue_worker $HOSTNAME:$PORT examples/makeflow_workers/makeflows/01Daftendirekt.makeflow`
-
+- To launch workers `srun work_queue_worker $HOSTNAME:$PORT projects/project3/berlioz_symphonie_1_reveries_pa.makeflow`
+- This sets up
+- `$HOSTNAME` must be the hostname where the job manager process is running
+- `$PORT` must be same port that manager is listening for
+- You can potentially complete this workflow in about same amount of time as song runtime
+    - Requires 100s of CPUs
 ```
 work_queue_worker: creating workspace /scratch/csul/makeflow/example/worker-268648-412
 work_queue_worker: creating workspace /scratch/csul/makeflow/example/worker-268648-416
