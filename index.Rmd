@@ -139,14 +139,14 @@ knitr::include_graphics("images/song.gif")
 
 ## Job type:`ffmpeg`
 - ffmpeg is used to create movie file
-    - `ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%09d.png -i 16Funk_Ad.flac -pix_fmt yuv410p 16Funk_Ad.mp4`
+    - `ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%09d.png -i 16Funk_Ad.flac -pix_fmt yuv420p 16Funk_Ad.mp4`
 
 |option| meaning|
 |---|---|
 |-threads| How many cpus to use when converting fiels|
 |-framerate |How many pictures per second|
 |-i | name or name pattern for input file(s) |
-| -pix_fmt yuv410p | video encoding option?|
+| -pix_fmt yuv420p | video encoding option?|
 | output_file.mp4 | output file name|
 
 ## Job Arrays
@@ -213,7 +213,7 @@ out_file="output/berlioz_symphonie_2_un_bal_vals.mp4"
 ffmpeg \
 -framerate 60 -i ${frame_dir}/frame%09d.png \
 -i ${song_file} \
--pix_fmt yuv410p \
+-pix_fmt yuv420p \
 -threads ${SLURM_CPUS_PER_TASK} \
 ${out_file}
 ```
