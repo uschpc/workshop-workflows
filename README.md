@@ -6,6 +6,8 @@ Researchers commonly find themselves repetitively checking the job scheduler to 
 
 This presentation will use `makeflow` to demonstrate some of these ideas. Other tools such as `snakemake` and Pegasus will be discussed.
 
+Slides available at: https://uschpc.github.io/workshop-workflows/
+
 ## Requirements
 
 ### Not available on discovery/endeavour
