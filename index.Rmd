@@ -1,7 +1,7 @@
 ---
 title: "Methods for Automating Job Submission "
 author: "Cesar Sul <br> csul[at]usc.edu <br> Research Computing Associate <br> CARC at USC"
-date: "2021-04-23"
+date: "2021-11-05"
 output:
   ioslides_presentation:
     widescreen: true
@@ -65,7 +65,7 @@ knitr::include_graphics("images/daft-punk-break-up-video-screenshot.jpg")
 
 <div class="columns-2">
 
-```{r,echo=FALSE,out.width="100%"}
+```{r,echo=FALSE,out.width="40%"}
 knitr::include_graphics("images/workflow.png")
 ```
 
@@ -73,31 +73,29 @@ knitr::include_graphics("images/workflow.png")
 - "image generator"
     - Takes `input.flac` song file as input
     - Song is divided in into timed segments
-    - Each segment is represted as series of images
     - 1 picture for every 1/60th of a second
+    - saved into 1 video file, `output.mp4`
     - Can run in any order
 - `ffmpeg`
-    - Merges all image files and `input.flac`
-    - creates `output.mp4`
-    - Can not run until **all** images are created
+    - Merges `output.mp4` and `input.flac`
+    - creates `final.mp4`
+    - Can not run until "image generator" step completes
 </div>
 
 ## Job type:`rosa_fft.py`
 
 - "image generator" is a python script, `rosa_fft.py`
-    -  `python3 rosa_fft.py -f 09Teachers.flac -i 172 -d 4 -o 09Teachers`
+    -  `python3 rosa_fft.py -f 09Teachers.flac -o 09Teachers`
 
 |option| meaning|
 |---|---|
 |-f | which song file to read from (doesn't have to be .flac format)|
-|-i |initial time to start reading data|
-|-d | how many seconds of song to read (default is 1)|
-|-o | which directory to save images|
+|-o | which directory to save movie to|
 
 
 ## Job type:`ffmpeg`
 - ffmpeg is used to create movie file
-    - `ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%09d.png -i 16Funk_Ad.flac -pix_fmt yuv410p 16Funk_Ad.mp4`
+    - `ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/silent.mp4 -i 16Funk_Ad.flac -pix_fmt yuv410p 16Funk_Ad.mp4`
 
 |option| meaning|
 |---|---|

@@ -2,15 +2,17 @@
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu-1GB
 #SBATCH --time=00:10:00
-#SBATCH --array=0-9
+#SBATCH --array=1-3
 module load python ffmpeg
 
-# How many seconds to process per job
-duration=4
-time_index=$((SLURM_ARRAY_TASK_ID*duration))
-song_file="data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mpr"
-out_dir="output/berlioz_symphonie_2_un_bal_vals"
+song_files=(`ls data/symphonie_fantastique`)
 
-echo "Processing time_index:${time_index}"
 
-python3 ./scripts/rosa_fft.py -f ${song_file} -i ${time_index} -t ${duration} -o ${out_dir}
+#song_file="data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3"
+song_file=${song_files[$SLURM_ARRAY_TASK_ID]}
+song_name=`basename $song_file .mp3`
+out_dir="output/$song_name"
+
+echo "Processing: $song_name"
+
+python3 ./scripts/rosa_fft.py -f ${song_file} -o ${out_dir}
