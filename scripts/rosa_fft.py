@@ -75,8 +75,9 @@ def main():
         fig,animate,frames=frames,fargs=(line,power,t))
     plt.close()
 
-    extra_args=[]
-    ani_f.save(output_dir+"/silent.mp4",dpi=dpi,fps=fps,extra_args=extra_args)
+    extra_args=['-report']
+    ffmpeg_writer=animation.FFMpegWriter(fps=fps,codec='png',extra_args=extra_args)
+    ani_f.save(output_dir+"/silent.mp4",dpi=dpi,writer=ffmpeg_writer)
 
 
 if __name__== "__main__":
