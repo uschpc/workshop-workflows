@@ -81,8 +81,8 @@ knitr::include_graphics("images/daft-punk-break-up-video-screenshot.jpg")
 - [Symphonie fantastiqe - Hector Berlioz](https://en.wikipedia.org/wiki/Symphonie_fantastique)
 - Downloadable here https://www.liberliber.it/online/autori/autori-b/hector-berlioz/symphonie-fantastique-op-14-concertgebouw-orchestra-of-amsterdam/
 - Cleaned up filenames available here:
-  - https://app.globus.org/file-manager?origin_id=56569ec1-af41-4745-a8d1-8514231c7a6d&origin_path=%2Fproject%2Fhpcroot%2Fcsul%2F (download to your project with Globus)
-  - https://m-7cdc74.a78b8.36fe.data.globus.org/project/hpcroot/csul/symphonie_fantastique.tar (download locally)
+    - https://app.globus.org/file-manager?origin_id=5eebdcc6-9760-458a-a963-456d0590f311&origin_path=%2F (download to your project with Globus)
+   - `-wget --no-check-certificate https://g-3d96ec.a78b8.36fe.data.globus.org/symphonie_fantastique.tar` (download tar file)
 - Once you have `symphonie_fantastique.tar`, you can extract with `tar xfv symphonie_fantastique.tar`
     - Ideally put it in `data` directory
 
