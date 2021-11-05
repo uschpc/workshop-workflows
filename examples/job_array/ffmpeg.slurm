@@ -3,7 +3,6 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=1GB
 #SBATCH --time=00:10:00
-#SBATCH --account=renney_710
 module load ffmpeg
 
 song_file="data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3"

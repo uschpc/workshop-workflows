@@ -1,7 +1,7 @@
 ---
 title: "Methods for Automating Job Submission "
 author: "Cesar Sul <br> csul[at]usc.edu <br> Research Computing Associate <br> CARC at USC"
-date: "2021-06-10"
+date: "2021-10-05"
 output:
   ioslides_presentation:
     widescreen: true
@@ -514,7 +514,10 @@ python3 ./scripts/rosa_fft.py -f ${song_file} -i ${time_index} -t ${duration} -o
 ## Project 2 Generate a Makeflow
 - Write a python script that will generate a makeflow to process an entire song
 - You can find a script to get started in `projects/project2/generate_makefile.py`
-- My solution (no peeking!) is there
+- Run it to get an idea of the format
+- It contains 3 "jobs"
+- They don't do anything but it does demonstrate the format
+- My solution (no peeking!) ~~is there~~ was there but got overwritten on accident :(
     - I've been using it to generate makeflow files for this presentation
 
 ## Project 3 Run a large Makeflow
