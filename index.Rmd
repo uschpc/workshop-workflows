@@ -1,7 +1,7 @@
 ---
 title: "Methods for Automating Job Submission "
 author: "Cesar Sul <br> csul[at]usc.edu <br> Research Computing Associate <br> CARC at USC"
-date: "2021-10-05"
+date: "2022-04-15"
 output:
   ioslides_presentation:
     widescreen: true
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 - Job Arrays (low overhead)
 - SnakeMake  (readability prioritized)
 - Pegasus    (portability prioritized)
-- Makeflow   (simplicity prioritized)
+- Makeflow   
 - Questions
 - Lab/Project time
 
@@ -547,7 +547,10 @@ python3 ./scripts/rosa_fft.py -f ${song_file} -i ${time_index} -t ${duration} -o
 - Use files in `examples/job_array` as needed
 
 ## Project 2 Generate a Makeflow
-- Write a python script that will generate a makeflow to process an entire song
+- Write a python script that will generate a makeflow to process all songs in a directory
+- Project was based on an earlier version of this presentation, start point not working right now :(
+
+
 - You can find a script to get started in `projects/project2/generate_makefile.py`
 - Run it to get an idea of the format
 - It contains 3 "jobs"
