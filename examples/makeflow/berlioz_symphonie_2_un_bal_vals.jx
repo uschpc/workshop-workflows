@@ -1,0 +1,29 @@
+{
+    "define":
+            {
+                "OUTDIR":"output/berlioz_symphonie_2_un_bal_vals/images",
+                "SONGNAME" : "berlioz_symphonie_2_un_bal_vals",
+                "FFMPEG_THREADS" : 4,
+                "FRAME_RATE" : 60,
+                "SONG_DURATION": 370
+                "MAX_FRAMES" : 22165
+            },
+    "rules":[
+                # Merge all frames into 1 video
+                {
+                    "command" : format("ffmpeg -threads %d -framerate %d -i output/%s/images/frame\%%d.png  -i ../../data/symphonie_fantastique/%s.mp3 output/%s/%s.mp4",FFMPEG_THREADS,FRAME_RATE,SONGNAME,SONGNAME,SONGNAME,SONGNAME),
+                    "inputs"  : [ format("output/%s/images/frame%d.png",SONGNAME, x) for x in range(0,370*60)],
+                    "output"  : [format("output/%s/%s.mp4",SONGNAME,SONGNAME)],
+                },
+                # Generate pictures for 0th second of song
+                {
+                    "command" : format("python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/%s.mp3 -i "+N+" -o output/%s",SONGNAME,SONGNAME),
+                    "inputs"  : ["../../scripts/rosa_fft.py" , format("../../data/symphonie_fantastique/%s.mp3",SONGNAME)],
+                    "outputs":
+                      [
+                        format("%s/frame%d.png",OUTDIR,x) for x in range(N*FRAME_RATE,(N+1)*FRAME_RATE)
+                      ]
+                } for N in range(0,370-1)
+            ]
+}
+

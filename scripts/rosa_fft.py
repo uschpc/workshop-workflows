@@ -4,6 +4,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import librosa, librosa.display
 import getopt,sys,os
+from tqdm import tqdm
 
 def usage():
     print("Usage:")
@@ -47,6 +48,7 @@ def main():
         elif o in ("-s", "--sample_rate"):
             song_sr=int(a)
     
+    song_name=song_file.split('/')[-1].split('.')[0]
     song_data,sr=librosa.load(song_file,sr=song_sr,offset=start_time,duration=duration)
     freq=librosa.fft_frequencies(sr=song_sr)
     S=librosa.stft(song_data,hop_length=int(song_sr/60))
@@ -55,7 +57,7 @@ def main():
     fig, ax = plt.subplots()
 
 
-    ax.set_title(song_file)
+    ax.set_title(song_name)
 
     w=len(power[0])//100
     max_frame=len(power)
@@ -66,16 +68,16 @@ def main():
     changeable_plot,=ax.semilogx(freq,moving_average,'.')
     ax.set_ylim(0,160)
     ax.set_xlim(500,2.205*10**4)
-    fig.savefig(output_dir+"/images/frame%09d.png"%(start_time*60),dpi=400,bbox_inches='tight')
+    fig.savefig(output_dir+"/images/frame%d.png"%(start_time*60),dpi=400,bbox_inches='tight')
 
-    for counter in range(1,max_frame):
+    for counter in tqdm(range(1,max_frame)):
 
         moving_average=np.convolve(power[counter],some_ones,mode='same')
 
         minp=np.min(moving_average)
         maxp=np.max(moving_average)
         changeable_plot.set_data(freq,moving_average)
-        fig.savefig(output_dir+"/images/frame%09d.png"%(counter+start_time*60),dpi=300,bbox_inches='tight')
+        fig.savefig(output_dir+"/images/frame%d.png"%(counter+start_time*60),dpi=300,bbox_inches='tight')
 
 if __name__== "__main__":
     main() 

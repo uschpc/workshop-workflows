@@ -443,81 +443,75 @@ capitol.jpg:
 - How do we use it?
 - For small number of jobs we can run locally
 - You'll have to put your own songs under data
-example 1
-2 seconds of video
-
 - Let's run in interactive session
 - `salloc --ntasks=1 --cpus-per-task=8 --time=1:00:00 --mem-per-cpu=2GB`
-- Generate makeflow file (first two seconds of song)
-- `python3 examples/two_seconds/generate_makefile_params.py -f data/Homework/01Daftendirekt.flac -o examples/two_seconds/`
+- Example file in `examples/clip/berlioz_symphonie_2_un_bal_vals.jx`
 
 
 ## Running a Makeflow
 - Run the makeflow
 ```{r,engine='bash',eval=FALSE}
 
-makeflow berlioz_symphonie_1_reveries_pa.makeflow                                        
-parsing berlioz_symphonie_1_reveries_pa.makeflow...                                                                     
-local resources: 24 cores, 193123 MB memory, 5192904429 MB disk
-max running local jobs: 24                                  
-checking berlioz_symphonie_1_reveries_pa.makeflow for consistency...
-berlioz_symphonie_1_reveries_pa.makeflow has 3 rules.
-creating new log file berlioz_symphonie_1_reveries_pa.makeflow.makeflowlog...
+$ makeflow --jx clip_berlioz_symphonie_2_un_bal_vals.jx
+parsing clip_berlioz_symphonie_2_un_bal_vals.jx...
+local resources: 32 cores, 191863 MB memory, 1438549300 MB disk
+max running local jobs: 32
+checking clip_berlioz_symphonie_2_un_bal_vals.jx for consistency...
+clip_berlioz_symphonie_2_un_bal_vals.jx has 4 rules.
+creating new log file clip_berlioz_symphonie_2_un_bal_vals.jx.makeflowlog...
 checking files for unexpected changes...  (use --skip-file-check to skip this step)
 starting workflow....
-submitting job: python3 /project/hpcroot/csul/workshop-workflows/scripts/rosa_fft.py -f /project/hpcroot/csul/workshop-w
-orkflows/data/symphonie_fantastique/berlioz_symphonie_1_reveries_pa.mp3 -i 1 -o ./berlioz_symphonie_1_reveries_pa
-submitted job 32066
-submitting job: python3 /project/hpcroot/csul/workshop-workflows/scripts/rosa_fft.py -f /project/hpcroot/csul/workshop-w
-orkflows/data/symphonie_fantastique/berlioz_symphonie_1_reveries_pa.mp3 -i 0 -o ./berlioz_symphonie_1_reveries_pa
-submitted job 32067
-job 32066 completed  
-job 32067 completed  
+submitting job: python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 -i 111 -o output/berlioz_symphonie_2_un_bal_vals
+submitted job 211569
+submitting job: python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 -i 110 -o output/berlioz_symphonie_2_un_bal_vals
+submitted job 211570
+submitting job: python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 -i 109 -o output/berlioz_symphonie_2_un_bal_vals
+submitted job 211571
 
-submitting job: ffmpeg -threads 4 -framerate 60 -i ./berlioz_symphonie_1_reveries_pa/images/frame%09d.png -i /project/hp
-croot/csul/workshop-workflows/data/symphonie_fantastique/berlioz_symphonie_1_reveries_pa.mp3 -pix_fmt yuv420p ./berlioz_
-symphonie_1_reveries_pa/berlioz_symphonie_1_reveries_pa.mp4                                                             
-submitted job 32185                                          
-job 32185 completed
+job 211569 completed
+job 211570 completed
+job 211571 completed
+submitting job: ffmpeg -threads 4 -framerate 60 -start_number 6540 -i output/berlioz_symphonie_2_un_bal_vals/images/frame%d.png -ss 00:01:49 -to 00:01:52 -i ../../data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 output/berlioz_symphonie_2_un_bal_vals/berlioz_symphonie_2_un_bal_vals.mp4
+submitted job 216156
+
+job 216156 completed
+deleted makeflow.failed.0
 nothing left to do.
+
 ```
 
 
 ## Running a Makeflow
 
-- Output files should be available under `examples/makeflow/`
+- Output files should be available under `examples/clips/output`
 ```{r,echo=FALSE,out.width="50%"}
 knitr::include_graphics("images/song_still.gif")
 ```
 - We should find
-    - `<song_name>.mp4`
-    - `images/*.png`
+    - `/<song_name>/<song_name>.mp4`
+    - `/<song_name>/images/*.png`
 
 ## Cleaning up
 - The `images` directory contains intermediate files
 - Not needed after final product is complete
-- Clean with `makeflow --clean=intermediates examples/two_seconds/makeflows/01Daftendirekt.makeflow`
+- Clean with `makeflow --clean=intermediates examples/clip/01Daftendirekt.jx`
 
-```
-makeflow --clean=intermediates berlioz_symphonie_1_reveries_pa.makeflow
-parsing berlioz_symphonie_1_reveries_pa.makeflow...                                                                     
-local resources: 24 cores, 193123 MB memory, 5192805270 MB disk    
-max running local jobs: 24                                                                                              
-checking berlioz_symphonie_1_reveries_pa.makeflow for consistency...
-berlioz_symphonie_1_reveries_pa.makeflow has 3 rules.                                                                   
-recovering from log file berlioz_symphonie_1_reveries_pa.makeflow.makeflowlog...
+```{r,eval=FALSE}
+$ makeflow --clean=intermediates --jx  clip_berlioz_symphonie_2_un_bal_vals.jx
+parsing clip_berlioz_symphonie_2_un_bal_vals.jx...
+local resources: 32 cores, 191863 MB memory, 1438503624 MB disk
+max running local jobs: 32
+checking clip_berlioz_symphonie_2_un_bal_vals.jx for consistency...
+clip_berlioz_symphonie_2_un_bal_vals.jx has 4 rules.
+recovering from log file clip_berlioz_symphonie_2_un_bal_vals.jx.makeflowlog...
 checking for old running or failed jobs...
 checking files for unexpected changes...  (use --skip-file-check to skip this step)
 cleaning filesystem...
+deleted output/berlioz_symphonie_2_un_bal_vals/images/frame6616.png
+deleted output/berlioz_symphonie_2_un_bal_vals/images/frame6578.png
+deleted output/berlioz_symphonie_2_un_bal_vals/images/frame6646.png
+deleted output/berlioz_symphonie_2_un_bal_vals/images/frame6559.png
 
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000045.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000041.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000115.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000078.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000083.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000068.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000056.png
-deleted ./berlioz_symphonie_1_reveries_pa/images/frame000000072.png
 ```
 
 ## Questions?
