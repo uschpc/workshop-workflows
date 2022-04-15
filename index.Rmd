@@ -61,7 +61,6 @@ knitr::include_graphics("images/Flame_ARO_960.jpg")
 ## Example workflow: Music Visualizer
 <div class="columns-2">
 - R.I.P Daft Punk!
-    - Kind of old news
 - We will make them a fitting tribute
 - I want to run a music visualization program
     - Song broken up into pieces
@@ -82,7 +81,7 @@ knitr::include_graphics("images/daft-punk-break-up-video-screenshot.jpg")
 - Downloadable here https://www.liberliber.it/online/autori/autori-b/hector-berlioz/symphonie-fantastique-op-14-concertgebouw-orchestra-of-amsterdam/
 - Cleaned up filenames available here:
     - https://app.globus.org/file-manager?origin_id=5eebdcc6-9760-458a-a963-456d0590f311&origin_path=%2F (download to your project with Globus)
-   - `-wget --no-check-certificate https://g-3d96ec.a78b8.36fe.data.globus.org/symphonie_fantastique.tar` (download tar file)
+    - `-wget --no-check-certificate https://g-3d96ec.a78b8.36fe.data.globus.org/symphonie_fantastique.tar` (download tar file)
 - Once you have `symphonie_fantastique.tar`, you can extract with `tar xfv symphonie_fantastique.tar`
     - Ideally put it in `data` directory
 
@@ -139,7 +138,7 @@ knitr::include_graphics("images/song.gif")
 
 ## Job type:`ffmpeg`
 - ffmpeg is used to create movie file
-    - `ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%09d.png -i 16Funk_Ad.flac -pix_fmt yuv420p 16Funk_Ad.mp4`
+    - `ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%d.png -i 16Funk_Ad.flac -pix_fmt yuv420p 16Funk_Ad.mp4`
 
 |option| meaning|
 |---|---|
@@ -153,6 +152,7 @@ knitr::include_graphics("images/song.gif")
 
 - Built-in Slurm feature https://slurm.schedmd.com/job_array.html
 - Use same job script for multiple jobs
+- Process first 40 seconds of song
 
 rosa_fft_array.slurm:
 ```{r,engine='bash',eval=FALSE}
@@ -199,8 +199,6 @@ python3 ./scripts/rosa_fft.py -f ${song_file} \
 ffmpeg.slurm:
 ```{r,engine='bash',eval=FALSE}
 #!/bin/bash
-#!/bin/bash
-#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=1GB
 #SBATCH --time=00:10:00
@@ -211,7 +209,7 @@ frame_dir="output/berlioz_symphonie_2_un_bal_vals/images"
 out_file="output/berlioz_symphonie_2_un_bal_vals.mp4"
 
 ffmpeg \
--framerate 60 -i ${frame_dir}/frame%09d.png \
+-framerate 60 -i ${frame_dir}/frame%d.png \
 -i ${song_file} \
 -pix_fmt yuv420p \
 -threads ${SLURM_CPUS_PER_TASK} \
@@ -286,6 +284,8 @@ rule bwa:
         "bwa mem -t {threads} {input} | samtools view -Sb - > {output}"
 ```
 ##  Parts of pegasus workflow
+- [Pegasus](url) is developed at USC
+- Manages **LARGE** workflows
 - workflow generator
 - catalogs
     - transformation.yml
@@ -360,27 +360,9 @@ capitol.jpg:
     - For more than a few files, Makeflow file is hard to read
     - Can be tedious to write by hand
 
-## Makeflow file
-- Due to a "quirk" in Makeflow we must add intermediate step
-
-```{r,engine='bash',eval=FALSE}
-output/song_name/index_XXXX_complete: list of .png files
-    touch output/song_name/index_XXXX_complete
-```
-- Makeflow breaks if rules are too long
-- This step says that if all images for time index XXXX exist, that rule is complete
-
-- The ffmpeg step then uses the rule
-
-```{r,engine='bash',eval=FALSE}
-output/song_name/song_name.mp4 : (list of output/song_name/index_XXXX_complete files)
-    ffmpeg ....
-```
-- If all `index_XXXX_complete` files exist, most likely all frames exist
 
 ## Makeflow JX
 - Makeflow also supports **J**SON e**X**tended syntax
-- Much more readable but personally I couldn't get it to work
 
 ```{
 "rules":[
@@ -397,6 +379,65 @@ output/song_name/song_name.mp4 : (list of output/song_name/index_XXXX_complete f
         ],
 }
 ```
+
+## Makeflow JX
+```{
+    "define":
+            {
+                "OUTDIR":"output/berlioz_symphonie_2_un_bal_vals/images",
+                "SONGNAME" : "berlioz_symphonie_2_un_bal_vals",
+                "FFMPEG_THREADS" : 4,
+                "FRAME_RATE" : 60,
+                "SONG_DURATION": 370
+            },
+    "rules":[
+                # Merge all frames into 1 video
+                {
+                    "command" : format("ffmpeg -threads %d -framerate %d -i output/%s/images/frame\%%d.png  -i ../../data/symphonie_fantastique/%s.mp3 output/%s/%s.mp4",FFMPEG_THREADS,FRAME_RATE,SONGNAME,SONGNAME,SONGNAME,SONGNAME),
+                    "inputs"  : [ format("output/%s/images/frame%d.png",SONGNAME, x) for x in range(0,SONG_DURATION*FRAME_RATE)],
+                    "output"  : [format("output/%s/%s.mp4",SONGNAME,SONGNAME)],
+                },{
+                    "command" : format("python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/%s.mp3 -i "+N+" -o output/%s",SONGNAME,SONGNAME),
+                    "inputs"  : ["../../scripts/rosa_fft.py" , format("../../data/symphonie_fantastique/%s.mp3",SONGNAME)],
+                    "outputs":
+                      [
+                        format("%s/frame%d.png",OUTDIR,x) for x in range(N*FRAME_RATE,(N+1)*FRAME_RATE)
+                      ]
+                } for N in range(0,370)
+            ]
+}
+```
+
+## Makeflow JX to JSON
+
+```{
+  "define":
+    {
+      "OUTDIR":"output/berlioz_symphonie_2_un_bal_vals/images",
+      "SONGNAME":"berlioz_symphonie_2_un_bal_vals",
+      "FFMPEG_THREADS":4,
+      "FRAME_RATE":60,
+      "SONG_DURATION":370
+    },
+  "rules":
+    [
+
+      {
+        "command":"ffmpeg -threads 4 -framerate 60 -i output/berlioz_symphonie_2_un_bal_vals/images/frame%d.png  -i ../../data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 output/berlioz_symphonie_2_un_bal_vals/berlioz_symphonie_2_un_bal_vals.mp4",
+        "inputs":
+          [
+            "output/berlioz_symphonie_2_un_bal_vals/images/frame0.png",
+            "output/berlioz_symphonie_2_un_bal_vals/images/frame1.png",
+            .
+            .
+            .
+            "output/berlioz_symphonie_2_un_bal_vals/images/frame22199.png"
+        ],
+        "output":
+        "output/berlioz_symphonie_2_un_bal_vals/berlioz_symphonie_2_un_bal_vals.mp4"
+        }
+```
+
 ## Running a Makeflow
 - Assume we have a Makeflow file that converts a song
 - How do we use it?

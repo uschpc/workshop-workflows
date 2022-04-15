@@ -3245,11 +3245,7 @@ slide:not(.current) .plotly.html-widget{
 
 <div class="columns-2">
 <ul>
-<li>R.I.P Daft Punk!
-
-<ul>
-<li>Kind of old news</li>
-</ul></li>
+<li>R.I.P Daft Punk!</li>
 <li>We will make them a fitting tribute</li>
 <li>I want to run a music visualization program
 
@@ -3361,7 +3357,7 @@ slide:not(.current) .plotly.html-widget{
 <li>ffmpeg is used to create movie file
 
 <ul>
-<li><code>ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%09d.png -i 16Funk_Ad.flac -pix_fmt yuv420p 16Funk_Ad.mp4</code></li>
+<li><code>ffmpeg -threads 8 -framerate 60 -i 16Funk_Ad/images/frame%d.png -i 16Funk_Ad.flac -pix_fmt yuv420p 16Funk_Ad.mp4</code></li>
 </ul></li>
 </ul>
 
@@ -3397,6 +3393,7 @@ slide:not(.current) .plotly.html-widget{
 <ul>
 <li>Built-in Slurm feature <a href='https://slurm.schedmd.com/job_array.html' title=''>https://slurm.schedmd.com/job_array.html</a></li>
 <li>Use same job script for multiple jobs</li>
+<li>Process first 40 seconds of song</li>
 </ul>
 
 <p>rosa_fft_array.slurm:</p>
@@ -3587,6 +3584,8 @@ sbatch --dependency=afterok:${jid} examples/job_array/ffmpeg.slurm</pre>
 </article></slide><slide class=""><hgroup><h2>Parts of pegasus workflow</h2></hgroup><article  class="smaller " id="parts-of-pegasus-workflow">
 
 <ul>
+<li><a href='url' title=''>Pegasus</a> is developed at USC</li>
+<li>Manages <strong>LARGE</strong> workflows</li>
 <li>workflow generator</li>
 <li>catalogs
 
@@ -3692,33 +3691,10 @@ capitol.jpg:
 </ul></li>
 </ul>
 
-</article></slide><slide class=""><hgroup><h2>Makeflow file</h2></hgroup><article  class="smaller " id="makeflow-file-3">
-
-<ul>
-<li>Due to a &ldquo;quirk&rdquo; in Makeflow we must add intermediate step</li>
-</ul>
-
-<pre class = 'prettyprint lang-bash'>output/song_name/index_XXXX_complete: list of .png files
-    touch output/song_name/index_XXXX_complete</pre>
-
-<ul>
-<li>Makeflow breaks if rules are too long</li>
-<li><p>This step says that if all images for time index XXXX exist, that rule is complete</p></li>
-<li><p>The ffmpeg step then uses the rule</p></li>
-</ul>
-
-<pre class = 'prettyprint lang-bash'>output/song_name/song_name.mp4 : (list of output/song_name/index_XXXX_complete files)
-    ffmpeg ....</pre>
-
-<ul>
-<li>If all <code>index_XXXX_complete</code> files exist, most likely all frames exist</li>
-</ul>
-
 </article></slide><slide class=""><hgroup><h2>Makeflow JX</h2></hgroup><article  class="smaller " id="makeflow-jx">
 
 <ul>
 <li>Makeflow also supports <strong>J</strong>SON e<strong>X</strong>tended syntax</li>
-<li>Much more readable but personally I couldn’t get it to work</li>
 </ul>
 
 <pre class = 'prettyprint lang-{'>&quot;rules&quot;:[
@@ -3734,6 +3710,61 @@ capitol.jpg:
          } for i in range(1,5)
         ],
 }</pre>
+
+</article></slide><slide class=""><hgroup><h2>Makeflow JX</h2></hgroup><article  class="smaller " id="makeflow-jx-1">
+
+<pre class = 'prettyprint lang-{'>    &quot;define&quot;:
+            {
+                &quot;OUTDIR&quot;:&quot;output/berlioz_symphonie_2_un_bal_vals/images&quot;,
+                &quot;SONGNAME&quot; : &quot;berlioz_symphonie_2_un_bal_vals&quot;,
+                &quot;FFMPEG_THREADS&quot; : 4,
+                &quot;FRAME_RATE&quot; : 60,
+                &quot;SONG_DURATION&quot;: 370
+            },
+    &quot;rules&quot;:[
+                # Merge all frames into 1 video
+                {
+                    &quot;command&quot; : format(&quot;ffmpeg -threads %d -framerate %d -i output/%s/images/frame\%%d.png  -i ../../data/symphonie_fantastique/%s.mp3 output/%s/%s.mp4&quot;,FFMPEG_THREADS,FRAME_RATE,SONGNAME,SONGNAME,SONGNAME,SONGNAME),
+                    &quot;inputs&quot;  : [ format(&quot;output/%s/images/frame%d.png&quot;,SONGNAME, x) for x in range(0,SONG_DURATION*FRAME_RATE)],
+                    &quot;output&quot;  : [format(&quot;output/%s/%s.mp4&quot;,SONGNAME,SONGNAME)],
+                },{
+                    &quot;command&quot; : format(&quot;python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/%s.mp3 -i &quot;+N+&quot; -o output/%s&quot;,SONGNAME,SONGNAME),
+                    &quot;inputs&quot;  : [&quot;../../scripts/rosa_fft.py&quot; , format(&quot;../../data/symphonie_fantastique/%s.mp3&quot;,SONGNAME)],
+                    &quot;outputs&quot;:
+                      [
+                        format(&quot;%s/frame%d.png&quot;,OUTDIR,x) for x in range(N*FRAME_RATE,(N+1)*FRAME_RATE)
+                      ]
+                } for N in range(0,370)
+            ]
+}</pre>
+
+</article></slide><slide class=""><hgroup><h2>Makeflow JX to JSON</h2></hgroup><article  class="smaller " id="makeflow-jx-to-json">
+
+<pre class = 'prettyprint lang-{'>  &quot;define&quot;:
+    {
+      &quot;OUTDIR&quot;:&quot;output/berlioz_symphonie_2_un_bal_vals/images&quot;,
+      &quot;SONGNAME&quot;:&quot;berlioz_symphonie_2_un_bal_vals&quot;,
+      &quot;FFMPEG_THREADS&quot;:4,
+      &quot;FRAME_RATE&quot;:60,
+      &quot;SONG_DURATION&quot;:370
+    },
+  &quot;rules&quot;:
+    [
+
+      {
+        &quot;command&quot;:&quot;ffmpeg -threads 4 -framerate 60 -i output/berlioz_symphonie_2_un_bal_vals/images/frame%d.png  -i ../../data/symphonie_fantastique/berlioz_symphonie_2_un_bal_vals.mp3 output/berlioz_symphonie_2_un_bal_vals/berlioz_symphonie_2_un_bal_vals.mp4&quot;,
+        &quot;inputs&quot;:
+          [
+            &quot;output/berlioz_symphonie_2_un_bal_vals/images/frame0.png&quot;,
+            &quot;output/berlioz_symphonie_2_un_bal_vals/images/frame1.png&quot;,
+            .
+            .
+            .
+            &quot;output/berlioz_symphonie_2_un_bal_vals/images/frame22199.png&quot;
+        ],
+        &quot;output&quot;:
+        &quot;output/berlioz_symphonie_2_un_bal_vals/berlioz_symphonie_2_un_bal_vals.mp4&quot;
+        }</pre>
 
 </article></slide><slide class=""><hgroup><h2>Running a Makeflow</h2></hgroup><article  class="smaller " id="running-a-makeflow">
 
