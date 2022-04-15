@@ -10,7 +10,7 @@ frame_dir="output/berlioz_symphonie_2_un_bal_vals/images"
 out_file="output/berlioz_symphonie_2_un_bal_vals.mp4"
 
 ffmpeg \
--framerate 60 -i ${frame_dir}/frame%09d.png \
+-framerate 60 -i ${frame_dir}/frame%d.png \
 -i ${song_file} \
 -pix_fmt yuv420p \
 -threads ${SLURM_CPUS_PER_TASK} \

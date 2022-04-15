@@ -12,9 +12,13 @@ Slides available at: https://uschpc.github.io/workshop-workflows/
 
 ### Not available on discovery/endeavour
 ---
-librosa python package
+Python packages
 ```
+# for processing audio data
 pip3 install librosa --user
+
+# progress bar library
+pip3 install tqdm --user
 ```
 
 ### Available as modules on discovery/endeavour

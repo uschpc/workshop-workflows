@@ -1,0 +1,45 @@
+{
+    "define":
+            {
+                "OUTDIR":"output/berlioz_symphonie_2_un_bal_vals/images",
+                "SONGNAME" : "berlioz_symphonie_2_un_bal_vals",
+                "FFMPEG_THREADS" : 4,
+                "FRAME_RATE" : 60
+            },
+    "rules":[
+                # Merge all frames into 1 video
+                {
+                    "command" : format("ffmpeg -threads %d -framerate %d -start_number 6540-i output/%s/images/frame\%%d.png -ss 00:01:49 -to 00:01:52 -i ../../data/symphonie_fantastique/%s.mp3 output/%s/%s.mp4",FFMPEG_THREADS,FRAME_RATE,SONGNAME,SONGNAME,SONGNAME,SONGNAME),
+                    "inputs"  : [ format("output/%s/images/frame%d.png",SONGNAME, x) for x in range(6540,6720)],
+                    "output"  : [format("output/%s/%s.mp4",SONGNAME,SONGNAME)],
+                },
+                # Generate pictures for 0th second of song
+                {
+                    "command" : format("python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/%s.mp3 -i 109 -o output/%s",SONGNAME,SONGNAME),
+                    "inputs"  : ["../../scripts/rosa_fft.py" , format("../../data/symphonie_fantastique/%s.mp3",SONGNAME)],
+                    "outputs":
+                      [
+                        format("%s/frame%d.png",OUTDIR,x) for x in range(6540,6600)
+                      ],
+                },
+                # Generate pictures for 1st second of song
+                {
+                    "command" : format("python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/%s.mp3 -i 110 -o output/%s",SONGNAME,SONGNAME),
+                    "inputs"  : ["../../scripts/rosa_fft.py" , format("../../data/symphonie_fantastique/%s.mp3",SONGNAME)],
+                    "outputs":
+                      [
+                        format("%s/frame%d.png",OUTDIR,x) for x in range(6600,6660)
+                      ],
+                },
+                # Generate pictures for 2nd second of song
+                {
+                    "command" : format("python3 ../../scripts/rosa_fft.py -f ../../data/symphonie_fantastique/%s.mp3 -i 111 -o output/%s",SONGNAME,SONGNAME),
+                    "inputs"  : ["../../scripts/rosa_fft.py" , format("../../data/symphonie_fantastique/%s.mp3",SONGNAME)],
+                    "outputs":
+                      [
+                        format("%s/frame%d.png",OUTDIR,x) for x in range(6660,6720)
+                      ],
+                },
+            ]
+}
+
