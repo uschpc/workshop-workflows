@@ -14,6 +14,7 @@ def usage():
     print("-i,--start_time  \tBeginning of window of interest")
     print("-t,--duration    \tLength of window of interest in sec (1 by default)")
     print("-s,--sample_rate \tSample rate of .flac song (44100 by default)")
+    print("-r,--frame_rate  \tFrame rate of eventual video (60 by default)")
 
 
 def main():
@@ -22,10 +23,11 @@ def main():
     frame_no=1
     output_dir="output"
     start_time=0
+    frame_rate=60
     duration=1 # Default 1s window
     
     try:
-        opts,args = getopt.getopt(sys.argv[1:],"hf:o:i:t:s:",["help","flac_file=","output_dir=","start_time=","duration=","sample_rate="])
+        opts,args = getopt.getopt(sys.argv[1:],"hf:o:i:t:s:r:",["help","flac_file=","output_dir=","start_time=","duration=","sample_rate=","frame_rate="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -39,7 +41,6 @@ def main():
             song_file=a
         elif o in ("-o", "--output_dir"):
             output_dir=a
-            os.makedirs(output_dir+"/images", exist_ok=True)
 
         elif o in ("-i", "--start_time"):
             start_time=int(a)
@@ -47,11 +48,14 @@ def main():
             duration=int(a)
         elif o in ("-s", "--sample_rate"):
             song_sr=int(a)
+        elif o in ("-r", "--frame_rate"):
+            frame_rate=int(a)
     
+    os.makedirs(output_dir+"/images", exist_ok=True)
     song_name=song_file.split('/')[-1].split('.')[0]
     song_data,sr=librosa.load(song_file,sr=song_sr,offset=start_time,duration=duration)
     freq=librosa.fft_frequencies(sr=song_sr)
-    S=librosa.stft(song_data,hop_length=int(song_sr/60))
+    S=librosa.stft(song_data,hop_length=int(song_sr/frame_rate))
     power=np.abs(S).T
 
     fig, ax = plt.subplots()
@@ -68,16 +72,18 @@ def main():
     changeable_plot,=ax.semilogx(freq,moving_average,'.')
     ax.set_ylim(0,160)
     ax.set_xlim(500,2.205*10**4)
-    fig.savefig(output_dir+"/images/frame%d.png"%(start_time*60),dpi=400,bbox_inches='tight')
+    #fig.savefig(output_dir+"/images/frame%d.png"%(start_time*60),dpi=400,bbox_inches='tight')
 
-    for counter in tqdm(range(1,max_frame)):
+    time_index=start_time-1
+    for counter in tqdm(range(0,max_frame-1)):
 
+        if( not counter%frame_rate):
+            time_index=time_index+1
+        fig.savefig(output_dir+"/images/frame_%04d-%03d.png"%(time_index,counter%frame_rate),dpi=300,bbox_inches='tight')
         moving_average=np.convolve(power[counter],some_ones,mode='same')
-
         minp=np.min(moving_average)
         maxp=np.max(moving_average)
         changeable_plot.set_data(freq,moving_average)
-        fig.savefig(output_dir+"/images/frame%d.png"%(counter+start_time*60),dpi=300,bbox_inches='tight')
 
 if __name__== "__main__":
     main() 
